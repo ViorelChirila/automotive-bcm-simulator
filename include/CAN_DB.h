@@ -14,10 +14,13 @@
 
 #include <stdint.h>
 
+/** \brief Data length code (payload size in bytes) used for every message on this bus */
+#define CAN_DLC 8
+
 /**
  * @brief Enum for defining message IDs
  */
-enum MESSAGE_ID
+enum MESSAGE_ID : uint16_t
 {
   CAN_MSG_WAKE_UP = 0x01,
   CAN_MSG_SLEEP = 0x02,
@@ -30,6 +33,10 @@ enum MESSAGE_ID
 
 /**
  * @brief Structure for the payload of the ButtonState message
+ * @note Bitfield-to-byte packing order is implementation-defined by the C++ standard.
+ *       This relies on both nodes being built with GCC (avr-gcc / xtensa-gcc), which
+ *       pack these bitfields identically. Always exchange data via the `bytes` member
+ *       of the union, never by copying the struct's raw memory across toolchains.
  */
 struct __attribute__((packed)) ButtonStateData
 {
@@ -42,11 +49,14 @@ struct __attribute__((packed)) ButtonStateData
 union ButtonStatePayload
 {
   ButtonStateData data;
-  uint8_t bytes[8];
+  uint8_t bytes[CAN_DLC];
 };
+
+static_assert(sizeof(ButtonStatePayload) == CAN_DLC, "ButtonStatePayload must match CAN_DLC");
 
 /**
  * @brief Structure for the payload of the LedState message
+ * @note See the bitfield packing note on ButtonStateData; the same caveat applies here.
  */
 struct __attribute__((packed)) LedStateData
 {
@@ -58,7 +68,9 @@ struct __attribute__((packed)) LedStateData
 union LedStatePayload
 {
   LedStateData data;
-  uint8_t bytes[8];
+  uint8_t bytes[CAN_DLC];
 };
+
+static_assert(sizeof(LedStatePayload) == CAN_DLC, "LedStatePayload must match CAN_DLC");
 
 #endif // CAN_DB_H
